@@ -1,3 +1,4 @@
+// src/components/FloatingThemeSelector.jsx
 import React, { useState } from "react";
 import { FiSettings } from "react-icons/fi";
 
@@ -7,17 +8,26 @@ const presetThemes = [
   { name: "Purple", value: "themePurple", hex: "#7c3aed" },
 ];
 
-const FloatingThemeSelector = ({ currentTheme, onThemeChange, customColor, onCustomColorChange }) => {
+const FloatingThemeSelector = ({
+  currentTheme,
+  onThemeChange,
+  customColor,
+  onCustomColorChange,
+  floatingColor, // floatingColor prop
+}) => {
   const [open, setOpen] = useState(false);
+
+  const buttonStyle = floatingColor ? { backgroundColor: floatingColor } : { backgroundColor: "#2563eb" };
 
   return (
     <>
       <button
-        className="fixed right-4 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg z-50"
+        style={buttonStyle}
+        className="fixed right-4 top-1/2 transform -translate-y-1/2 hover:opacity-90 text-white p-3 rounded-full shadow-lg z-50"
         onClick={() => setOpen(!open)}
         title="Change Theme"
       >
-        <FiSettings size={20} />
+        <FiSettings size={24} />
       </button>
       {open && (
         <div className="fixed right-16 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 p-4 rounded-lg shadow-lg z-50">
@@ -51,7 +61,7 @@ const FloatingThemeSelector = ({ currentTheme, onThemeChange, customColor, onCus
             />
           </div>
           <button
-            className="mt-4 block mx-auto text-sm text-blue-600 hover:underline"
+            className="mt-4 block mx-auto text-sm text-blue-600 dark:text-blue-300 hover:underline"
             onClick={() => setOpen(false)}
           >
             Close

@@ -5,22 +5,19 @@ import { fetchUserInfo } from "../api/api";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Initialize from cached data if available
-  const initialUser = localStorage.getItem("cachedUser")
-    ? JSON.parse(localStorage.getItem("cachedUser"))
-    : null;
-  const [user, setUser] = useState(initialUser);
+  // Initialize token state from localStorage.
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUser = async () => {
-    const token = localStorage.getItem("token");
-    console.log("AuthContext: Token from localStorage =", token);
-    if (token) {
+  // Load user info using the current token.
+  const loadUser = async (currentToken) => {
+    if (currentToken) {
       try {
-        const data = await fetchUserInfo(token);
-        console.log("AuthContext: Fetched user =", data);
-        setUser(data);
-        localStorage.setItem("cachedUser", JSON.stringify(data));
+        const fetchedUser = await fetchUserInfo(currentToken);
+        console.log("AuthContext: Fetched user =", fetchedUser);
+        setUser(fetchedUser);
+        localStorage.setItem("cachedUser", JSON.stringify(fetchedUser));
       } catch (error) {
         console.error("AuthContext: Error fetching user", error);
         setUser(null);
@@ -30,16 +27,30 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
     }
     setLoading(false);
-    console.log("AuthContext: Loading finished, user =", user);
   };
 
+  // When token changes, reload the user.
   useEffect(() => {
-    loadUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setLoading(true);
+    loadUser(token);
+  }, [token]);
+
+  // Method to update token (e.g., on login)
+  const updateToken = (newToken) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+  };
+
+  // Logout: clear token and cached user.
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("cachedUser");
+    setToken(null);
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, loadUser }}>
+    <AuthContext.Provider value={{ user, token, updateToken, logout, loading, loadUser }}>
       {children}
     </AuthContext.Provider>
   );

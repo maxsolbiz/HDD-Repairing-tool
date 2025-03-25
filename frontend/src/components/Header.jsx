@@ -1,8 +1,9 @@
+// src/components/Header.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FiSun, FiMoon, FiLogOut } from "react-icons/fi";
+import { useAuth } from "../contexts/AuthContext";
 
-// For preset themes, force background with preset classes.
 const presetColorMapping = {
   themeBlue: "bg-blue-600",
   themeGreen: "bg-green-600",
@@ -11,13 +12,14 @@ const presetColorMapping = {
 
 const Header = ({ darkMode, onToggleDarkMode, theme, customColor, customTextColor }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth(); // Use the logout method from AuthContext
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     navigate("/");
   };
 
-  // If preset, we use preset classes and force text to white via inline style.
-  const style = theme === "custom" 
+  const style = theme === "custom"
     ? { backgroundColor: customColor, color: customTextColor }
     : { color: "#ffffff" };
 
@@ -64,7 +66,11 @@ const Header = ({ darkMode, onToggleDarkMode, theme, customColor, customTextColo
             </span>
           </label>
         </div>
-        <button onClick={handleLogout} className="p-2 rounded bg-red-500 hover:bg-red-700 transition" title="Logout">
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded bg-red-500 hover:bg-red-700 transition"
+          title="Logout"
+        >
           <FiLogOut size={20} />
         </button>
       </div>

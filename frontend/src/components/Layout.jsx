@@ -8,15 +8,15 @@ import FloatingThemeSelector from "./FloatingThemeSelector";
 // Preset themes mapping for header/footer.
 const presetThemes = {
   themeBlue: {
-    headerFooterBg: "#2563eb",   // blue-600
+    headerFooterBg: "#2563eb", // blue-600
     headerFooterText: "#ffffff",
   },
   themeGreen: {
-    headerFooterBg: "#16a34a",   // green-600
+    headerFooterBg: "#16a34a", // green-600
     headerFooterText: "#ffffff",
   },
   themePurple: {
-    headerFooterBg: "#7c3aed",   // purple-600
+    headerFooterBg: "#7c3aed", // purple-600
     headerFooterText: "#ffffff",
   },
 };
@@ -24,16 +24,16 @@ const presetThemes = {
 // Preset sidebar mapping.
 const presetSidebar = {
   themeBlue: {
-    bg: "#bfdbfe",        // blue-200
-    text: "#1e3a8a",       // blue-900
+    bg: "#bfdbfe", // blue-200
+    text: "#1e3a8a", // blue-900
   },
   themeGreen: {
-    bg: "#bbf7d0",        // green-200
-    text: "#14532d",       // green-900
+    bg: "#bbf7d0", // green-200
+    text: "#14532d", // green-900
   },
   themePurple: {
-    bg: "#e9d5ff",        // purple-200
-    text: "#4c1d95",       // purple-900
+    bg: "#e9d5ff", // purple-200
+    text: "#4c1d95", // purple-900
   },
 };
 
@@ -106,7 +106,8 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    // Set CSS variable for header background globally.
+    <div style={{ "--header-bg": headerBg }} className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Header 
         darkMode={darkMode} 
         onToggleDarkMode={() => setDarkMode(!darkMode)} 
@@ -119,6 +120,7 @@ const Layout = ({ children }) => {
         onThemeChange={handleThemeChange}
         customColor={customColor}
         onCustomColorChange={handleCustomColorChange}
+        floatingColor={headerBg}
       />
       <div className="flex flex-grow pt-20 pb-16">
         <Sidebar 
@@ -126,7 +128,6 @@ const Layout = ({ children }) => {
           customColor={sidebarBg}
           customTextColor={sidebarText}
         />
-        {/* Main content area wrapped with fade-in animation */}
         <main className="flex-grow p-4 bg-white dark:bg-gray-800 animate-fadeIn">
           {children}
         </main>

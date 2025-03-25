@@ -1,4 +1,3 @@
-// src/contexts/ThemeContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
@@ -6,6 +5,7 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const defaultTheme = "themeBlue";
   const defaultCustomColor = "#2563eb";
+
   const [theme, setTheme] = useState(defaultTheme);
   const [customColor, setCustomColor] = useState(defaultCustomColor);
 

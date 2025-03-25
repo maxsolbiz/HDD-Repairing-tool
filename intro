@@ -1120,5 +1120,329 @@ Here are some enhancement suggestions based on what we’ve built so far:
   • As the project grows, consider splitting the application into services (e.g., authentication, diagnostics, repair tasks) for easier maintenance and scalability.
 
 These enhancements can help improve user experience, maintainability, and performance as your application grows. Let me know if you’d like more details on any of these suggestions or further guidance on implementation!
-========================================================================================
+=======================================================================================
+Thanks i understand your solution i would like adopt the modular approach and create separate models.py file for this implementation give me the full code with structure to deploy 
+=======================================================================================
+Below is one complete example of a modular FastAPI backend that uses SQLAlchemy with separate files for models, database configuration, CRUD operations, and schemas. In this example, we add a new model to track user activity (login and logout times) and provide endpoints for signup, login, logout, and online user statistics.
+
+You can use the following file structure:
+
+```
+backend/
+├── main.py
+├── models.py
+├── database.py
+├── schemas.py
+└── crud.py
+```
+
+---
+
+### **1. models.py**
+
+Define your database models (User and UserActivity) here.
+
+```python
+# models.py
+import datetime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    activities = relationship("UserActivity", back_populates="user", cascade="all, delete")
+
+class UserActivity(Base):
+    __tablename__ = "user_activities"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    login_time = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    logout_time = Column(DateTime, nullable=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    user = relationship("User", back_populates="activities")
+```
+
+---
+
+### **2. database.py**
+
+Configure your SQLAlchemy engine, session, and create tables.
+
+```python
+# database.py
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")
+
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+def init_db():
+    Base.metadata.create_all(bind=engine)
+```
+
+---
+
+### **3. schemas.py**
+
+Define your Pydantic schemas for data validation and responses.
+
+```python
+# schemas.py
+from pydantic import BaseModel, EmailStr
+import datetime
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserInDB(BaseModel):
+    id: int
+    email: EmailStr
+
+    class Config:
+        orm_mode = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class UserActivitySchema(BaseModel):
+    id: int
+    user_id: int
+    login_time: datetime.datetime
+    logout_time: datetime.datetime | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
+
+    class Config:
+        orm_mode = True
+```
+
+---
+
+### **4. crud.py**
+
+Implement CRUD functions for user operations and user activity tracking.
+
+```python
+# crud.py
+import datetime
+from sqlalchemy.orm import Session
+from models import User, UserActivity
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_user_by_email(db: Session, email: str):
+    return db.query(User).filter(User.email == email).first()
+
+def create_user(db: Session, email: str, password: str):
+    hashed_pw = get_password_hash(password)
+    db_user = User(email=email, hashed_password=hashed_pw)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def create_user_activity(db: Session, user_id: int, ip_address: str = None, user_agent: str = None):
+    activity = UserActivity(
+        user_id=user_id,
+        login_time=datetime.datetime.utcnow(),
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
+    db.add(activity)
+    db.commit()
+    db.refresh(activity)
+    return activity
+
+def update_user_activity_logout(db: Session, user_id: int):
+    activity = db.query(UserActivity).filter(
+        UserActivity.user_id == user_id, 
+        UserActivity.logout_time.is_(None)
+    ).order_by(UserActivity.login_time.desc()).first()
+    if activity:
+        activity.logout_time = datetime.datetime.utcnow()
+        db.commit()
+    return activity
+
+def get_online_users_count(db: Session):
+    return db.query(UserActivity).filter(UserActivity.logout_time.is_(None)).count()
+```
+
+---
+
+### **5. main.py**
+
+This is your main FastAPI application that brings everything together. It loads environment variables, initializes the database, and defines authentication endpoints using JWT.
+
+```python
+# main.py
+import os
+import datetime
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import jwt
+
+from database import SessionLocal, init_db
+from schemas import UserCreate, Token, UserInDB
+from crud import (
+    get_user_by_email,
+    create_user,
+    create_user_activity,
+    update_user_activity_logout,
+    get_online_users_count,
+    verify_password
+)
+
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+app = FastAPI(title="HDD Repairing Tool API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
+# Dependency for database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.on_event("startup")
+def startup():
+    init_db()
+    db = next(get_db())
+    default_email = "admin@example.com"
+    default_password = "adminpass"
+    if not get_user_by_email(db, default_email):
+        create_user(db, default_email, default_password)
+        print(f"Default user created: {default_email} / {default_password}")
+    else:
+        print("Default user already exists.")
+
+def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.datetime.utcnow() + (expires_delta if expires_delta else datetime.timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the HDD Repairing Tool API!"}
+
+@app.post("/auth/signup", response_model=Token)
+def signup(user: UserCreate, db: SessionLocal = Depends(get_db)):
+    if get_user_by_email(db, user.email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    new_user = create_user(db, user.email, user.password)
+    # Log the login event immediately upon signup.
+    create_user_activity(db, new_user.id)
+    access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    token = create_access_token(data={"sub": new_user.email}, expires_delta=access_token_expires)
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/auth/token", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: SessionLocal = Depends(get_db)):
+    user = get_user_by_email(db, form_data.username)
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect email or password")
+    # Record login event.
+    create_user_activity(db, user.id)
+    access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/auth/logout")
+def logout(token: str = Depends(oauth2_scheme), db: SessionLocal = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    update_user_activity_logout(db, user.id)
+    return {"detail": "Logged out successfully"}
+
+@app.get("/auth/me", response_model=UserInDB)
+def read_users_me(token: str = Depends(oauth2_scheme), db: SessionLocal = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
+
+@app.get("/stats/online")
+def online_users(db: SessionLocal = Depends(get_db)):
+    count = get_online_users_count(db)
+    return {"online_users": count}
+```
+
+---
+
+### Deployment and Further Enhancements
+
+- **Deployment:**  
+  • You can deploy this backend using Uvicorn (e.g., using a command like `uvicorn main:app --host 0.0.0.0 --port 8000`)  
+  • For production, consider using Gunicorn with Uvicorn workers.  
+  • Use environment variables (via a `.env` file) for your `SECRET_KEY` and `DATABASE_URL`.
+
+- **Further Enhancements:**  
+  • **Security:** Implement rate limiting (using a package such as SlowAPI) to prevent brute-force attacks.  
+  • **Real‑Time Tracking:** Consider a background task or Redis to manage online user sessions in real time.  
+  • **Error Logging:** Integrate structured logging (e.g., with Loguru or Python’s logging module) and external error tracking (like Sentry).
+
+---
+
+### Summary
+
+This modular structure separates your models, database configuration, CRUD logic, and API endpoints for better maintainability and scalability. You can deploy this backend as a standalone FastAPI application, and it now includes user activity tracking (login/logout) and online user statistics.
+
+Feel free to adjust or extend the code further to meet your specific production needs. Let me know if you need additional changes or further guidance!
+===================================================================================
+
+
 
