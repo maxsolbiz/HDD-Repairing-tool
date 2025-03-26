@@ -15,8 +15,8 @@ const AdminLayout = () => {
       {/* Admin Navbar */}
       <header className="flex items-center justify-between p-4 bg-blue-600 text-white">
         <div className="flex items-center">
-          <button
-            onClick={toggleSidebar}
+          <button 
+            onClick={toggleSidebar} 
             className="mr-4 text-xl md:hidden focus:outline-none"
           >
             {sidebarOpen ? <FaTimes /> : <FaBars />}
@@ -27,9 +27,10 @@ const AdminLayout = () => {
           <Link className="mr-4 hover:underline" to="/admin/logs">
             Activity Logs
           </Link>
-          {/* Add additional top-level admin links as needed */}
+          {/* Add more admin links as needed */}
         </nav>
       </header>
+
       <div className="flex flex-1">
         {/* Admin Sidebar */}
         <aside
@@ -47,15 +48,17 @@ const AdminLayout = () => {
                   Activity Logs
                 </Link>
               </li>
-              {/* Add additional sidebar items here */}
+              {/* Additional sidebar items */}
             </ul>
           </nav>
         </aside>
+
         {/* Main Admin Content */}
         <main className="flex-1 p-4">
           <Outlet />
         </main>
       </div>
+
       <footer className="p-4 bg-blue-600 text-white text-center">
         © {new Date().getFullYear()} Your Company
       </footer>

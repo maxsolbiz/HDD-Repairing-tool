@@ -8,9 +8,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Lazy load pages
 const HomePage = lazy(() => import("./pages/HomePage"));
 const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
-const AdminLayout = lazy(() => import("./components/AdminLayout"));
 
 const AppContent = () => {
   return (
@@ -24,7 +24,7 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
-      {/* Admin logs route (only for admin). We'll do a separate route */}
+      {/* Admin logs route (only accessible to admin users) */}
       <Route
         path="/admin/logs"
         element={

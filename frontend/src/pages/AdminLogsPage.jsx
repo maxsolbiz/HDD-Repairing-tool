@@ -11,17 +11,20 @@ const AdminLogsPage = () => {
   const { token } = useAuth();
   const [activities, setActivities] = useState([]);
   const [onlineCount, setOnlineCount] = useState(0);
+  // Pagination state
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [total, setTotal] = useState(0);
 
   const fetchData = async () => {
     try {
+      // Fetch online users count
       const resOnline = await axios.get(`${BASE_URL}/admin/stats/online`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOnlineCount(resOnline.data.online_users);
 
+      // Fetch paginated activity logs
       const resActivities = await axios.get(
         `${BASE_URL}/admin/user-activities?page=${page}&per_page=${perPage}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -51,9 +54,7 @@ const AdminLogsPage = () => {
           responseType: "blob",
         }
       );
-      const blob = new Blob([response.data], {
-        type: format === "pdf" ? "application/pdf" : "text/csv",
-      });
+      const blob = new Blob([response.data], { type: format === "pdf" ? "application/pdf" : "text/csv" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -71,11 +72,10 @@ const AdminLogsPage = () => {
     <Layout>
       <div className="p-4">
         <h1 className="text-3xl font-bold mb-4">Admin Dashboard - User Activity Logs</h1>
-        <div className="mb-4">
-          <p className="text-xl">
-            Total Online Users: <span className="font-bold">{onlineCount}</span>
-          </p>
-        </div>
+        <p className="text-xl mb-4">
+          Total Online Users: <span className="font-bold">{onlineCount}</span>
+        </p>
+
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded-lg">
             <thead>
