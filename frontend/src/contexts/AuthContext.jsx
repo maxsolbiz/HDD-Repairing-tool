@@ -10,11 +10,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user info using the current token.
-  const loadUser = async (currentToken) => {
-    if (currentToken) {
+  // Load user info using the current token (axios instance attaches the token automatically)
+  const loadUser = async () => {
+    if (token) {
       try {
-        const fetchedUser = await fetchUserInfo(currentToken);
+        const fetchedUser = await fetchUserInfo();
         console.log("AuthContext: Fetched user =", fetchedUser);
         setUser(fetchedUser);
         localStorage.setItem("cachedUser", JSON.stringify(fetchedUser));
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
   // When token changes, reload the user.
   useEffect(() => {
     setLoading(true);
-    loadUser(token);
+    loadUser();
   }, [token]);
 
   // Method to update token (e.g., on login)

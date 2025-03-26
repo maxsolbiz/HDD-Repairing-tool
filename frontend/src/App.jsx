@@ -1,27 +1,18 @@
 // src/App.jsx
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Lazy load pages (e.g. HomePage)
 const HomePage = lazy(() => import("./pages/HomePage"));
+const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
+const AdminLayout = lazy(() => import("./components/AdminLayout"));
 
 const AppContent = () => {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="text-xl font-bold">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -33,6 +24,17 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
+      {/* Admin logs route (only for admin). We'll do a separate route */}
+      <Route
+        path="/admin/logs"
+        element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminLogsPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };
@@ -42,7 +44,13 @@ function App() {
     <AuthProvider>
       <ThemeProvider>
         <Router>
-          <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading page...</div>}>
+          <Suspense
+            fallback={
+              <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900">
+                Loading page...
+              </div>
+            }
+          >
             <AppContent />
           </Suspense>
         </Router>

@@ -14,10 +14,22 @@ const Header = ({ darkMode, onToggleDarkMode, theme, customColor, customTextColo
   const navigate = useNavigate();
   const { logout } = useAuth(); // Use the logout method from AuthContext
 
-  const handleLogout = () => {
-    logout();
+  // Inside your handleLogout in Header.jsx
+const handleLogout = async () => {
+    try {
+      // 1) POST /auth/logout with Bearer token
+      await axios.post(`${BASE_URL}/auth/logout`, null, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.error("Error calling logout", err);
+      // even if it fails, proceed with local logout
+    }
+    // 2) Clear local token
+    logout(); 
     navigate("/");
   };
+  
 
   const style = theme === "custom"
     ? { backgroundColor: customColor, color: customTextColor }

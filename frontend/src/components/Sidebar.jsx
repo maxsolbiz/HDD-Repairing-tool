@@ -1,7 +1,8 @@
 // src/components/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiHome, FiSearch, FiTool, FiMenu } from "react-icons/fi";
+import { FiHome, FiSearch, FiTool, FiMenu, FiActivity } from "react-icons/fi";
+import { useAuth } from "../contexts/AuthContext";
 
 const presetSidebarMapping = {
   themeBlue: "bg-blue-100 dark:bg-blue-800",
@@ -11,6 +12,7 @@ const presetSidebarMapping = {
 
 const Sidebar = ({ theme, customColor, customTextColor }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();  // <--- Get the current user
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Auto-collapse on mobile view (width < 768px)
@@ -22,7 +24,6 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
         setIsCollapsed(false);
       }
     };
-    // Run on mount
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -51,6 +52,7 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
           <FiHome size={20} />
           {!isCollapsed && <span className="ml-2">Dashboard</span>}
         </button>
+
         <button
           onClick={() => navigate("/scan")}
           className="flex items-center p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-700 w-full"
@@ -58,6 +60,7 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
           <FiSearch size={20} />
           {!isCollapsed && <span className="ml-2">Scan Drives</span>}
         </button>
+
         <button
           onClick={() => navigate("/repair")}
           className="flex items-center p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-700 w-full"
@@ -65,6 +68,17 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
           <FiTool size={20} />
           {!isCollapsed && <span className="ml-2">Repair Drives</span>}
         </button>
+
+        {/* Only show "Admin Logs" if user is admin */}
+        {user && user.role === "admin" && (
+          <button
+            onClick={() => navigate("/admin/logs")}
+            className="flex items-center p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-700 w-full"
+          >
+            <FiActivity size={20} />
+            {!isCollapsed && <span className="ml-2">Admin Logs</span>}
+          </button>
+        )}
       </nav>
     </aside>
   );
