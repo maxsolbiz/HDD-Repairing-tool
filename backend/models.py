@@ -1,18 +1,26 @@
 # models.py
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+import enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+# Define an enumeration for user roles
+class UserRoleEnum(enum.Enum):
+    admin = "admin"
+    user = "user"
+    guest = "guest"
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    username = Column(String, nullable=True)         # New field
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(150), unique=True, nullable=True)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="user")  # New field with default "user"
+    # Use the enum for role; default is set to UserRoleEnum.user
+    role = Column(Enum(UserRoleEnum), nullable=False, default=UserRoleEnum.user)
     activities = relationship("UserActivity", back_populates="user", cascade="all, delete")
 
 class UserActivity(Base):

@@ -11,6 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 // Lazy load pages
 const HomePage = lazy(() => import("./pages/HomePage"));
 const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
+const Profile = lazy(() => import("./pages/Profile")); // New Profile page
 
 const AppContent = () => {
   return (
@@ -29,6 +30,15 @@ const AppContent = () => {
         element={
           <ProtectedRoute adminOnly={true}>
             <AdminLogsPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* New Profile route */}
+      <Route
+        path="/user/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         }
       />

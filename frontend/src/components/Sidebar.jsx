@@ -1,7 +1,7 @@
 // src/components/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiHome, FiSearch, FiTool, FiMenu, FiActivity } from "react-icons/fi";
+import { FiHome, FiSearch, FiTool, FiMenu, FiActivity, FiUser } from "react-icons/fi";
 import { useAuth } from "../contexts/AuthContext";
 
 const presetSidebarMapping = {
@@ -12,17 +12,12 @@ const presetSidebarMapping = {
 
 const Sidebar = ({ theme, customColor, customTextColor }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();  // <--- Get the current user
+  const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Auto-collapse on mobile view (width < 768px)
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsCollapsed(true);
-      } else {
-        setIsCollapsed(false);
-      }
+      setIsCollapsed(window.innerWidth < 768);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -52,7 +47,6 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
           <FiHome size={20} />
           {!isCollapsed && <span className="ml-2">Dashboard</span>}
         </button>
-
         <button
           onClick={() => navigate("/scan")}
           className="flex items-center p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-700 w-full"
@@ -60,7 +54,6 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
           <FiSearch size={20} />
           {!isCollapsed && <span className="ml-2">Scan Drives</span>}
         </button>
-
         <button
           onClick={() => navigate("/repair")}
           className="flex items-center p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-700 w-full"
@@ -68,8 +61,6 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
           <FiTool size={20} />
           {!isCollapsed && <span className="ml-2">Repair Drives</span>}
         </button>
-
-        {/* Only show "Admin Logs" if user is admin */}
         {user && user.role === "admin" && (
           <button
             onClick={() => navigate("/admin/logs")}
@@ -79,6 +70,13 @@ const Sidebar = ({ theme, customColor, customTextColor }) => {
             {!isCollapsed && <span className="ml-2">Admin Logs</span>}
           </button>
         )}
+        <button
+          onClick={() => navigate("/user/profile")}
+          className="flex items-center p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-700 w-full"
+        >
+          <FiUser size={20} />
+          {!isCollapsed && <span className="ml-2">Profile</span>}
+        </button>
       </nav>
     </aside>
   );

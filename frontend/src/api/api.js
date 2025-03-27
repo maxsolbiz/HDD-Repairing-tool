@@ -37,9 +37,11 @@ export const fetchDrives = async () => {
   }
 };
 
-export const fetchUserInfo = async () => {
+export const fetchUserInfo = async (token) => {
   try {
-    const response = await axiosInstance.get("/auth/me");
+    const response = await axiosInstance.get("/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching user info:", error.response?.data || error.message);

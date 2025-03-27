@@ -5,8 +5,10 @@ import { fetchUserInfo } from "../api/api";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [user, setUser] = useState(null);
+  const initialToken = localStorage.getItem("token");
+  const cachedUser = localStorage.getItem("cachedUser");
+  const [token, setToken] = useState(initialToken);
+  const [user, setUser] = useState(cachedUser ? JSON.parse(cachedUser) : null);
   const [loading, setLoading] = useState(true);
 
   const loadUser = async (currentToken) => {
@@ -51,7 +53,6 @@ export const AuthProvider = ({ children }) => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         logout();
-        // Optionally show a toast notification for auto logout
         console.info("Auto-logout due to inactivity");
       }, 30 * 60 * 1000); // 30 minutes
     };
@@ -68,7 +69,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, updateToken, logout, loading, loadUser }}>
+    <AuthContext.Provider
+      value={{ user, token, updateToken, logout, loading, loadUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

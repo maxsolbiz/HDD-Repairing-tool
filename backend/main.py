@@ -13,8 +13,8 @@ import jwt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-# Import models, schemas, CRUD functions, and admin router
-from models import Base, User
+# Import models, schemas, CRUD functions, admin router, and profile router
+from models import Base, User, UserRoleEnum
 from schemas import UserCreate, Token, UserInDB
 from crud import (
     get_user_by_email,
@@ -26,6 +26,8 @@ from crud import (
 )
 from admin import admin_router  # Admin routes
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, DATABASE_URL
+
+from profile import profile_router  # User profile routes
 
 # Configure logging
 logging.basicConfig(
@@ -89,7 +91,8 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme), db: Session = De
     except jwt.PyJWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     user = get_user_by_email(db, email)
-    if not user or user.role.lower() != "admin":
+    # Updated: Compare enum directly instead of calling lower()
+    if not user or user.role != UserRoleEnum.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return user
 
@@ -207,3 +210,8 @@ def online_users(db: Session = Depends(get_db)):
 # INCLUDE ADMIN ROUTES
 # -------------------------
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
+
+# -------------------------
+# INCLUDE PROFILE ROUTES
+# -------------------------
+app.include_router(profile_router, prefix="/user", tags=["Profile"])

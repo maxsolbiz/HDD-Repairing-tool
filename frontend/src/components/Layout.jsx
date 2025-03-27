@@ -55,8 +55,8 @@ function adjustColor(color, percent) {
   let num = parseInt(color.slice(1), 16),
       amt = Math.round(2.55 * percent),
       R = Math.min(255, Math.max(0, (num >> 16) + amt)),
-      G = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amt)),
-      B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+      G = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt)),
+      B = Math.min(255, Math.max(0, (num & 0x0000ff) + amt));
   return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1);
 }
 
@@ -79,6 +79,9 @@ const Layout = ({ children }) => {
   const headerText = theme === "custom" ? getContrastColor(customHeaderFooterBg) : presetThemes[theme].headerFooterText;
   const sidebarBg = theme === "custom" ? customSidebarBg : presetSidebar[theme].bg;
   const sidebarText = theme === "custom" ? getContrastColor(customSidebarBg) : presetSidebar[theme].text;
+
+  // Main content background will remain as white/dark gray regardless of theme.
+  const mainContentClasses = "flex-grow p-4 bg-white dark:bg-gray-800 animate-fadeIn";
 
   useEffect(() => {
     if (darkMode) {
@@ -108,13 +111,18 @@ const Layout = ({ children }) => {
   return (
     // Set CSS variable for header background globally.
     <div style={{ "--header-bg": headerBg }} className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <Header 
-        darkMode={darkMode} 
-        onToggleDarkMode={() => setDarkMode(!darkMode)} 
-        theme={theme} 
-        customColor={headerBg}
-        customTextColor={headerText}
-      />
+      // In Layout.jsx, inside your render:
+        <Header
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(!darkMode)}
+        theme={theme}
+        customHeaderColor={headerBg}            // computed header background
+        customDropdownColor={sidebarBg}         // computed sidebar background (used for dropdown)
+        customDropdownTextColor={sidebarText}   // computed sidebar text color (for dropdown)
+        customTextColor={headerText}            // header text color
+        />
+
+
       <FloatingThemeSelector
         currentTheme={theme}
         onThemeChange={handleThemeChange}
@@ -128,7 +136,7 @@ const Layout = ({ children }) => {
           customColor={sidebarBg}
           customTextColor={sidebarText}
         />
-        <main className="flex-grow p-4 bg-white dark:bg-gray-800 animate-fadeIn">
+        <main className={mainContentClasses}>
           {children}
         </main>
       </div>

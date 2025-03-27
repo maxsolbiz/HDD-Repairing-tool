@@ -10,12 +10,13 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import jwt
 
-from models import UserActivity
+from models import UserActivity, UserRoleEnum  # Import UserRoleEnum for proper role comparison
 from crud import get_online_users_count, get_user_by_email
 from database import get_db
 from config import SECRET_KEY, ALGORITHM
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
-from export import generate_csv, generate_pdf, get_export_filename  # New export module
+from export import generate_csv, generate_pdf, get_export_filename  # Functions defined in export.py
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,8 @@ def get_current_admin_user(
             detail="Invalid token"
         )
     user = get_user_by_email(db, email)
-    if not user or (hasattr(user, "role") and user.role.lower() != "admin"):
+    # Updated role check: compare enum directly without calling lower()
+    if not user or user.role != UserRoleEnum.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
@@ -91,27 +93,34 @@ def admin_stats(
 def export_activities(
     format: str = Query("csv", enum=["csv", "pdf"]),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_admin_user)
+    current_user=Depends(get_current_admin_user)
 ):
-    # Fetch all activities (or you can also add pagination/filters)
-    activities = db.query(UserActivity).order_by(UserActivity.login_time.desc()).all()
-    rows = []
-    for act in activities:
-        rows.append({
+    # Fetch all user activities (or add pagination/filters as needed)
+    activities_qs = db.query(UserActivity).order_by(UserActivity.login_time.desc()).all()
+    activities = []
+    for act in activities_qs:
+        activities.append({
             "id": act.id,
             "user_email": act.user.email,
-            "login_time": str(act.login_time) if act.login_time else "",
-            "logout_time": str(act.logout_time) if act.logout_time else "",
+            "login_time": str(act.login_time or ""),
+            "logout_time": str(act.logout_time or ""),
             "ip_address": act.ip_address or "",
             "user_agent": act.user_agent or ""
         })
 
     if format == "csv":
-        content = generate_csv(rows)
-        response = StreamingResponse(io.StringIO(content), media_type="text/csv")
+        csv_data = generate_csv(activities)
+        response = StreamingResponse(
+            iter([csv_data]),
+            media_type="text/csv"
+        )
+        response.headers["Content-Disposition"] = f"attachment; filename={get_export_filename('csv')}"
+        return response
     elif format == "pdf":
-        pdf_buffer = generate_pdf(rows)
-        response = StreamingResponse(pdf_buffer, media_type="application/pdf")
-    filename = get_export_filename(format)
-    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-    return response
+        pdf_buffer = generate_pdf(activities)
+        response = StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf"
+        )
+        response.headers["Content-Disposition"] = f"attachment; filename={get_export_filename('pdf')}"
+        return response
