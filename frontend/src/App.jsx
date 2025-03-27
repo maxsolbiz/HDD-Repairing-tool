@@ -24,7 +24,6 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
-      {/* Admin logs route (only accessible to admin users) */}
       <Route
         path="/admin/logs"
         element={
@@ -33,7 +32,7 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
-      {/* Catch-all */}
+      {/* Catch-all route */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
